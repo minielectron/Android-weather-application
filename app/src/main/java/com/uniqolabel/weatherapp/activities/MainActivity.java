@@ -1,7 +1,6 @@
 package com.uniqolabel.weatherapp.activities;
 
 import android.Manifest;
-import android.animation.Animator;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.arch.lifecycle.Observer;
@@ -14,7 +13,9 @@ import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -28,6 +29,7 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.view.animation.AnimationUtils;
 import android.view.animation.Interpolator;
 import android.widget.Button;
@@ -56,9 +58,7 @@ import org.joda.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Locale;
-import java.util.Random;
 import java.util.TimeZone;
-import java.util.concurrent.Executors;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -107,42 +107,51 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
     private ProgressDialog progressDialog;
     private ForecastAdapter adapter;
     private ArrayList<ForecastModel> forecastModelArrayList;
-    private Calendar calendar;
+    private Handler handler;
+    private int delay = 0;
+    private DateTimeZone dateTimeZone;
 
-    @Override
-    public void onRefresh() {
-        permissionRequest();
-        swipeToRefresh.setRefreshing(false);
-        Toast.makeText(this, "Refreshed", Toast.LENGTH_SHORT).show();
-    }
 
     enum Days {
+        SUNDAY,
         MONDAY, TUESDAY, WEDNESDAY,
-        THURSDAY, FRIDAY, SATURDAY, SUNDAY;
+        THURSDAY, FRIDAY, SATURDAY;
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        hideSystemUI(getWindow());
+
         ButterKnife.bind(this);
         setSupportActionBar(toolbar);
         weatherViewModel = ViewModelProviders.of(this).get(WeatherViewModel.class);
         forecastModelArrayList = new ArrayList<>();
+        dateTimeZone = DateTimeZone.forTimeZone(Calendar.getInstance().getTimeZone());
         adapter = new ForecastAdapter(this, forecastModelArrayList);
         forecastRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         forecastRecyclerView.setAdapter(adapter);
         progressDialog = new ProgressDialog(this);
         progressDialog.setMessage("Loading...");
+        attachApiCallObserver();
         swipeToRefresh.setOnRefreshListener(this);
-        // Hi, All the very best :-) same to you :-)
         toolbarText.setText(getResources().getString(R.string.test_city_name));
         if (isNetworkAvailable()) {
             permissionRequest();
         } else {
-            Toast.makeText(this, "Please turn on the internet !", Toast.LENGTH_SHORT).show();
+            giveReloadOption("Turn on internet or WiFi");
         }
+    }
 
+    private void attachApiCallObserver() {
+        WeatherViewModel.loading.observe(this, new Observer<Boolean>() {
+            @Override
+            public void onChanged(@Nullable Boolean aBoolean) {
+                if(aBoolean) progressDialog.show();
+                else progressDialog.hide();
+            }
+        });
     }
 
     private void permissionRequest() {
@@ -153,16 +162,37 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
         }
     }
 
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) {
+            hideSystemUI(getWindow());
+        } else showSystemUI();
+    }
+
+    private void showSystemUI() {
+        View decorView = getWindow().getDecorView();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
+        }
+    }
+
+    private void hideSystemUI(Window window) {
+        View decorView = window.getDecorView();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            decorView.setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
+        }
+    }
+
     private void getWeatherReport() {
         maskFrame.setVisibility(View.GONE);
         GPSTracker gpsTracker = new GPSTracker(this);
         final Location location = gpsTracker.getLocation();
         if (location != null) {
-            progressDialog.show();
             weatherViewModel.getCurrentWeatherInfoNetworkCall(String.valueOf(location.getLatitude()), String.valueOf(location.getLongitude()), CELSIUS, getResources().getString(R.string.appid)).observe(this, new Observer<CurrentWeatherResponse>() {
                 @Override
                 public void onChanged(@Nullable CurrentWeatherResponse weatherSuccessResponse) {
-                    progressDialog.hide();
                     if (weatherSuccessResponse != null) {
                         tempTv.setText(String.format(Locale.ENGLISH, "%.2f", weatherSuccessResponse.getMain().getTemp()));
                         humdityTv.setText(String.format(Locale.ENGLISH, "%.2f", weatherSuccessResponse.getMain().getHumidity()));
@@ -172,8 +202,7 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
                         Glide.with(getApplicationContext()).load(IMAGE_LOADING_URL + weatherSuccessResponse.getWeather().get(0).getIcon() + ".png").into(descriptionIcon);
                         sunriseTv.setText(DateUtility.getTimeFromTimestamp(weatherSuccessResponse.getSys().getSunrise()));
                         sunsetTv.setText(DateUtility.getTimeFromTimestamp(weatherSuccessResponse.getSys().getSunset()));
-                        setTransitionChaoticAnimationOnViewGroup(rootOne);
-
+                        setTransitionYAnimationOnViewGroup(rootOne);
                         getWeatherForecastReport(String.valueOf(location.getLatitude()), String.valueOf(location.getLongitude()), CELSIUS, getResources().getString(R.string.appid));
                     } else {
                         Log.d(TAG, "onChanged: response is null");
@@ -193,16 +222,15 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
             public void onChanged(@Nullable WeatherForecastResponse weatherForecastResponse) {
                 if (weatherForecastResponse != null) {
                     forecastModelArrayList.clear();
+                    ForecastModel forecastModel;
                     DateTimeZone dateTimeZone = DateTimeZone.forTimeZone(TimeZone.getTimeZone(String.valueOf(weatherForecastResponse.getCity().getTimezone())));
                     for (int i = 0; i < weatherForecastResponse.getCnt(); i = i + 8) {
-                        ForecastModel forecastModel = new ForecastModel();
+                        forecastModel = new ForecastModel();
                         forecastModel.setDate(DateUtility.getDateFromTimestamp(weatherForecastResponse.getList().get(i).getDt()));
                         Double minTemp = (weatherForecastResponse.getList().get(i).getMain().getTempMin());
-                        Double maxTemp = (weatherForecastResponse.getList().get(i).getMain().getTempMax());
-                        forecastModel.setTempRange(String.format(Locale.ENGLISH, "%.2f\u00B0~%.2f\u00B0", minTemp, maxTemp));
-                        calendar = Calendar.getInstance(TimeZone.getTimeZone(String.valueOf(weatherForecastResponse.getCity().getTimezone())));
-                        calendar.setTimeInMillis(weatherForecastResponse.getList().get(i).getDt());
-                        forecastModel.setDayName(getDayName(weatherForecastResponse.getList().get(i).getDt(), dateTimeZone));
+//                        Double maxTemp = (weatherForecastResponse.getList().get(i).getMain().getTempMax()); // giving almost same in 3hrs duration , so not using
+                        forecastModel.setTempRange(String.format(Locale.ENGLISH, "%.2f\u00B0", minTemp));
+                        forecastModel.setDayName(getDayName(weatherForecastResponse.getList().get(i).getDt()));
                         forecastModel.setIconName(weatherForecastResponse.getList().get(i).getWeather().get(0).getIcon());
                         forecastModelArrayList.add(forecastModel);
                     }
@@ -215,13 +243,13 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
         });
     }
 
-    public String getDayName(Long millisSinceEpochInUtc, DateTimeZone dateTimeZone) {
-//        DateTimeZone timeZone = DateTimeZone.forID( "Europe/Paris" );
+    public String getDayName(Long millisSinceEpochInUtc) {
         DateTime dateTime = new DateTime(millisSinceEpochInUtc * 1000, dateTimeZone);
         int dayOfWeekNumber = dateTime.getDayOfWeek(); // ISO 8601 standard says Monday is 1.
         DateTimeFormatter formatter = DateTimeFormat.forPattern("EEEE").withLocale(Locale.ENGLISH);
-        String dayOfWeekName = formatter.print(dateTime);
-        return dayOfWeekName;
+//        Days days;
+//        return Days.values()[dayOfWeekNumber - 1].toString();
+        return formatter.print(dateTime);
     }
 
     public void giveReloadOption(String message) {
@@ -265,6 +293,7 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
         dialog.show();
     }
 
+
     private void showRationaleDialogSecond() {
         AlertDialog dialog = new AlertDialog.Builder(this)
                 .setMessage("Location Access Permission is required for usage of this application.")
@@ -303,79 +332,58 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
     public void setTransitionYAnimationOnViewGroup(ViewGroup root) {
         int count = root.getChildCount();
         float offset = getResources().getDimensionPixelSize(R.dimen.offset_y);
-        Interpolator interpolator =
-                AnimationUtils.loadInterpolator(this, android.R.interpolator.linear_out_slow_in);
-        // loop over the children setting an increasing translation y but the same animation
-        // duration + interpolation
-        for (int i = 0; i < count; i++) {
-            View view = root.getChildAt(i);
-            view.setVisibility(View.VISIBLE);
-            view.setTranslationY(offset);
-            view.setAlpha(0.67f);
-            // then animate back to natural position
-            view.animate()
-                    .translationY(0f)
-                    .alpha(1f)
-                    .setInterpolator(interpolator)
-                    .setDuration(400L)
-                    .setListener(new Animator.AnimatorListener() {
-                        @Override
-                        public void onAnimationStart(Animator animation) {
-
-                        }
-
-                        @Override
-                        public void onAnimationEnd(Animator animation) {
-                            setTransitionYAnimationOnViewGroup(forecastRecyclerView);
-                        }
-
-                        @Override
-                        public void onAnimationCancel(Animator animation) {
-
-                        }
-
-                        @Override
-                        public void onAnimationRepeat(Animator animation) {
-
-                        }
-                    })
-                    .start();
-            // increase the offset distance for the next view
-            offset *= 1.5f;
+        Interpolator interpolator;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+            interpolator = AnimationUtils.loadInterpolator(this, android.R.interpolator.linear_out_slow_in);
+            // loop over the children setting an increasing translation y but the same animation
+            // duration + interpolation
+            for (int i = 0; i < count; i++) {
+                View view = root.getChildAt(i);
+                view.setVisibility(View.VISIBLE);
+                view.setTranslationY(offset);
+                view.setAlpha(0.67f);
+                // then animate back to natural position
+                view.animate()
+                        .translationY(0f)
+                        .alpha(1f)
+                        .setInterpolator(interpolator)
+                        .setDuration(400L)
+                        .start();
+                // increase the offset distance for the next view
+                offset *= 1.5f;
+            }
         }
+
     }
 
-    public void setTransitionChaoticAnimationOnViewGroup(ViewGroup viewGroup) {
-        float maxWidthOffset = 2f * getResources().getDisplayMetrics().widthPixels;
-        float maxHeightOffset = 2f * getResources().getDisplayMetrics().heightPixels;
-        Interpolator interpolator =
-                AnimationUtils.loadInterpolator(this, android.R.interpolator.linear_out_slow_in);
-        Random random = new Random();
-        int count = viewGroup.getChildCount();
-        for (int i = 0; i < count; i++) {
-            View view = viewGroup.getChildAt(i);
-            view.setVisibility(View.VISIBLE);
-            view.setAlpha(0.85f);
-            float xOffset = random.nextFloat() * maxWidthOffset;
-            if (random.nextBoolean()) {
-                xOffset *= -1;
-            }
-            view.setTranslationX(xOffset);
-            float yOffset = random.nextFloat() * maxHeightOffset;
-            if (random.nextBoolean()) {
-                yOffset *= -1;
-            }
-            view.setTranslationY(yOffset);
+    @Override
+    public void onRefresh() {
+        permissionRequest();
+        swipeToRefresh.setRefreshing(false);
+        Toast.makeText(this, "Refreshed", Toast.LENGTH_SHORT).show();
+    }
 
-            // now animate them back into their natural position
-            view.animate()
-                    .translationY(0f)
-                    .translationX(0f)
-                    .alpha(1f)
-                    .setInterpolator(interpolator)
-                    .setDuration(1000)
-                    .start();
+    //-----------setting double tap close feature ------------------
+    boolean doubleBackToExitPressedOnce = false;
+
+
+    @Override
+    public void onBackPressed() {
+        if (doubleBackToExitPressedOnce) {
+            super.onBackPressed();
+            return;
         }
+
+        this.doubleBackToExitPressedOnce = true;
+        Toast.makeText(this, "Please click BACK again to exit", Toast.LENGTH_SHORT).show();
+
+        new Handler().postDelayed(new Runnable() {
+
+            @Override
+            public void run() {
+                doubleBackToExitPressedOnce = false;
+            }
+        }, 2000);
     }
 
 }

@@ -44,8 +44,10 @@ public class WeatherRepository {
             @Override
             public void onResponse(Call<WeatherForecastResponse> call, Response<WeatherForecastResponse> response) {
                 WeatherViewModel.loading.setValue(false);
-                if (response.isSuccessful())
+                if (response.isSuccessful()) {
                     responseMutableLiveData.setValue(response.body());
+                    Log.d(TAG, "onResponse: failure "+response.raw().request().url());
+                }
                 else Log.d(TAG, "onResponse: "+response.raw().request().url());
             }
 
@@ -53,6 +55,7 @@ public class WeatherRepository {
             public void onFailure(Call<WeatherForecastResponse> call, Throwable t) {
                 WeatherViewModel.loading.setValue(false);
                 Log.d(TAG, "onFailure: "+t.getMessage());
+                Log.d(TAG, "onResponse: failure "+call.request().url());
                 responseMutableLiveData.setValue(null);
             }
         });
@@ -66,15 +69,18 @@ public class WeatherRepository {
             @Override
             public void onResponse(Call<CurrentWeatherResponse> call, Response<CurrentWeatherResponse> response) {
                 WeatherViewModel.loading.setValue(false);
-                if (response.isSuccessful())
+                if (response.isSuccessful()) {
                     currentWeatherResponseMutableLiveData.setValue(response.body());
-                else Log.d(TAG, "onResponse: "+response.raw().request().url());
+                    Log.d(TAG, "onResponse: "+response.raw().request().url());
+                }
+                else Log.d(TAG, "onResponse parse failure: "+response.raw().request().url());
             }
 
             @Override
             public void onFailure(Call<CurrentWeatherResponse> call, Throwable t) {
                 WeatherViewModel.loading.setValue(false);
                 Log.d(TAG, "onFailure: "+t.getMessage());
+                Log.d(TAG, "onResponse failure: "+call.request().url());
                 currentWeatherResponseMutableLiveData.setValue(null);
             }
         });
