@@ -161,7 +161,7 @@
                             <ImageView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                app:srcCompat="@drawable/ic_sunrise" />
+                                app:srcCompat="@drawable/ic_sunset" />
 
                             <TextView
                                 android:layout_width="wrap_content"
@@ -187,7 +187,7 @@
                             <ImageView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                app:srcCompat="@drawable/ic_sunset" />
+                                app:srcCompat="@drawable/ic_sunrise" />
 
                             <TextView
                                 android:layout_width="wrap_content"
@@ -233,7 +233,6 @@
                 android:layout_height="match_parent"
                 android:clickable="false"
                 android:focusable="true"
-                android:alpha="0.5"
                 android:visibility="gone">
 
                 <Button
@@ -241,7 +240,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
-                    android:backgroundTint="@color/colorPrimary"
+                    android:backgroundTint="@color/colorAccent"
                     android:drawableLeft="@drawable/reload_ic"
                     android:drawablePadding="8dp"
                     android:text="@string/reload"

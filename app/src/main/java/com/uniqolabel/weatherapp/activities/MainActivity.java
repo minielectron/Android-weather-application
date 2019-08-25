@@ -123,7 +123,6 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         hideSystemUI(getWindow());
-
         ButterKnife.bind(this);
         setSupportActionBar(toolbar);
         weatherViewModel = ViewModelProviders.of(this).get(WeatherViewModel.class);
@@ -148,7 +147,7 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
         WeatherViewModel.loading.observe(this, new Observer<Boolean>() {
             @Override
             public void onChanged(@Nullable Boolean aBoolean) {
-                if(aBoolean) progressDialog.show();
+                if (aBoolean) progressDialog.show();
                 else progressDialog.hide();
             }
         });
@@ -245,17 +244,13 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
 
     public String getDayName(Long millisSinceEpochInUtc) {
         DateTime dateTime = new DateTime(millisSinceEpochInUtc * 1000, dateTimeZone);
-        int dayOfWeekNumber = dateTime.getDayOfWeek(); // ISO 8601 standard says Monday is 1.
         DateTimeFormatter formatter = DateTimeFormat.forPattern("EEEE").withLocale(Locale.ENGLISH);
-//        Days days;
-//        return Days.values()[dayOfWeekNumber - 1].toString();
         return formatter.print(dateTime);
     }
 
     public void giveReloadOption(String message) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
         maskFrame.setVisibility(View.VISIBLE);
-        progressDialog.hide();
     }
 
     @Override
@@ -319,7 +314,12 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
 
     @OnClick(R.id.reload_button)
     public void onViewClicked() {
-        permissionRequest();
+        if (isNetworkAvailable()){
+            permissionRequest();
+            Toast.makeText(this, "Refreshed", Toast.LENGTH_SHORT).show();
+
+        }
+        else giveReloadOption("Please Turn on Internet or Wifi");
     }
 
     private boolean isNetworkAvailable() {
@@ -358,9 +358,13 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
 
     @Override
     public void onRefresh() {
-        permissionRequest();
+        if (isNetworkAvailable()){
+            permissionRequest();
+            Toast.makeText(this, "Refreshed", Toast.LENGTH_SHORT).show();
+
+        }
+        else giveReloadOption("Please Turn on Internet or Wifi");
         swipeToRefresh.setRefreshing(false);
-        Toast.makeText(this, "Refreshed", Toast.LENGTH_SHORT).show();
     }
 
     //-----------setting double tap close feature ------------------
