@@ -1,3 +1,6 @@
 <resources>
     <string name="app_name">Weather App</string>
+    <string name="test_city_name">Electronic city</string>
+    <string name="reload">Reload</string>
+    <string name="not_providing">nothing</string>
 </resources>
