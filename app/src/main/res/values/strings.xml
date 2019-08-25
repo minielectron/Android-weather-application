@@ -3,4 +3,6 @@
     <string name="test_city_name">Electronic city</string>
     <string name="reload">Reload</string>
     <string name="not_providing">nothing</string>
+    <string name="weather_icon">weather icon</string>
+    <string name="partly_sunny">Partly sunny</string>
 </resources>

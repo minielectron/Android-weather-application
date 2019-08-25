@@ -28,9 +28,11 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.bumptech.glide.Glide;
 import com.uniqolabel.weatherapp.R;
 import com.uniqolabel.weatherapp.model.CurrentWeatherResponse;
 import com.uniqolabel.weatherapp.services.GPSTracker;
+import com.uniqolabel.weatherapp.utils.DateUtility;
 import com.uniqolabel.weatherapp.viewmodel.WeatherViewModel;
 
 import java.util.Locale;
@@ -59,6 +61,14 @@ public class MainActivity extends AppCompatActivity {
     TextView tempRangeTv;
     @BindView(R.id.weather_description)
     TextView weatherDescription;
+    @BindView(R.id.description_icon)
+    ImageView descriptionIcon;
+    @BindView(R.id.humdity_tv)
+    TextView humdityTv;
+    @BindView(R.id.sunrise_tv)
+    TextView sunriseTv;
+    @BindView(R.id.sunset_tv)
+    TextView sunsetTv;
     private WeatherViewModel weatherViewModel;
     private ProgressDialog progressDialog;
 
@@ -102,13 +112,17 @@ public class MainActivity extends AppCompatActivity {
                 public void onChanged(@Nullable CurrentWeatherResponse weatherSuccessResponse) {
                     progressDialog.hide();
                     if (weatherSuccessResponse != null) {
-                        tempTv.setText(String.format(Locale.ENGLISH,"%.2f",weatherSuccessResponse.getMain().getTemp()));
+                        tempTv.setText(String.format(Locale.ENGLISH, "%.2f", weatherSuccessResponse.getMain().getTemp()));
+                        humdityTv.setText(String.format(Locale.ENGLISH, "%.2f", weatherSuccessResponse.getMain().getHumidity()));
                         tempRangeTv.setText(String.format(Locale.ENGLISH, "%.0f~%.0f degree", weatherSuccessResponse.getMain().getTempMin(), weatherSuccessResponse.getMain().getTempMax()));
                         weatherDescription.setText(String.valueOf(weatherSuccessResponse.getWeather().get(0).getDescription()));
                         toolbarText.setText(weatherSuccessResponse.getName());
+                        Glide.with(getApplicationContext()).load("http://openweathermap.org/img/wn/" + weatherSuccessResponse.getWeather().get(0).getIcon() + ".png").into(descriptionIcon);
+                        sunriseTv.setText(DateUtility.getTimeFromTimestamp(weatherSuccessResponse.getSys().getSunrise()/1000));
+                        sunsetTv.setText(DateUtility.getTimeFromTimestamp(weatherSuccessResponse.getSys().getSunset()/1000));
                     } else
                         Log.d(TAG, "onChanged: response is null");
-                        Toast.makeText(MainActivity.this, "Response is null", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, "Response is null", Toast.LENGTH_SHORT).show();
                 }
             });
             Log.d(TAG, "permissionRequest: long: " + location.getLongitude() + "\nLat: " + location.getLatitude());

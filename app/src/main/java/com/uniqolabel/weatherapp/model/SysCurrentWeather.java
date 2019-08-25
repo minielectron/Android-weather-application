@@ -18,10 +18,10 @@ public class SysCurrentWeather {
     private String country;
     @SerializedName("sunrise")
     @Expose
-    private Integer sunrise;
+    private Long sunrise;
     @SerializedName("sunset")
     @Expose
-    private Integer sunset;
+    private Long sunset;
 
     public Integer getType() {
         return type;
@@ -55,19 +55,19 @@ public class SysCurrentWeather {
         this.country = country;
     }
 
-    public Integer getSunrise() {
+    public Long getSunrise() {
         return sunrise;
     }
 
-    public void setSunrise(Integer sunrise) {
+    public void setSunrise(Long sunrise) {
         this.sunrise = sunrise;
     }
 
-    public Integer getSunset() {
+    public Long getSunset() {
         return sunset;
     }
 
-    public void setSunset(Integer sunset) {
+    public void setSunset(Long sunset) {
         this.sunset = sunset;
     }
 

@@ -32,7 +32,7 @@ public class CurrentWeatherResponse {
     private Integer dt;
     @SerializedName("sys")
     @Expose
-    private Sys sys;
+    private SysCurrentWeather sys;
     @SerializedName("timezone")
     @Expose
     private Integer timezone;
@@ -110,11 +110,11 @@ public class CurrentWeatherResponse {
         this.dt = dt;
     }
 
-    public Sys getSys() {
+    public SysCurrentWeather getSys() {
         return sys;
     }
 
-    public void setSys(Sys sys) {
+    public void setSys(SysCurrentWeather sys) {
         this.sys = sys;
     }
 
