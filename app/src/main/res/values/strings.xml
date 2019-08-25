@@ -5,4 +5,5 @@
     <string name="not_providing">nothing</string>
     <string name="weather_icon">weather icon</string>
     <string name="partly_sunny">Partly sunny</string>
+    <string name="temperature">Temperature</string>
 </resources>

@@ -14,16 +14,16 @@ public class DateUtility {
     }
 
     public static String getDateFromTimestamp(Long timeStamp) {
-        Timestamp stamp = new Timestamp(timeStamp);
+        Timestamp stamp = new Timestamp(timeStamp*1000);
         Date date = new Date(stamp.getTime());
         String formatRequired = "dd MMM, yyyy";
         SimpleDateFormat requiredDateFormat = new SimpleDateFormat(formatRequired, Locale.ENGLISH);
         return requiredDateFormat.format(date);
     }
     public static String getTimeFromTimestamp(Long timeStamp) {
-        Timestamp stamp = new Timestamp(timeStamp);
+        Timestamp stamp = new Timestamp(timeStamp*1000);
         Date date = new Date(stamp.getTime());
-        String formatRequired = "hh:mm";
+        String formatRequired = "hh:mm a";
         SimpleDateFormat requiredDateFormat = new SimpleDateFormat(formatRequired, Locale.ENGLISH);
         return requiredDateFormat.format(date);
     }
