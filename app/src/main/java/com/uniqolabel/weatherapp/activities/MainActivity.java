@@ -29,7 +29,6 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
 import android.view.animation.AnimationUtils;
 import android.view.animation.Interpolator;
 import android.widget.Button;
@@ -60,7 +59,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
-import java.util.TimeZone;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -105,12 +103,14 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
     LinearLayout linearLayout;
     @BindView(R.id.root_one)
     ConstraintLayout rootOne;
+    @BindView(R.id.line_view)
+    View lineView;
+    @BindView(R.id.now_lalbel)
+    TextView nowLalbel;
     private WeatherViewModel weatherViewModel;
     private ProgressDialog progressDialog;
     private ForecastAdapter adapter;
     private ArrayList<ForecastModel> forecastModelArrayList;
-    private Handler handler;
-    private int delay = 0;
     private DateTimeZone dateTimeZone;
 
 
@@ -120,6 +120,7 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
         setSupportActionBar(toolbar);
+        root.setPadding(0,getStatusBarHeight(),0,0);
         weatherViewModel = ViewModelProviders.of(this).get(WeatherViewModel.class);
         forecastModelArrayList = new ArrayList<>();
         dateTimeZone = DateTimeZone.forTimeZone(Calendar.getInstance().getTimeZone());
@@ -136,6 +137,15 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
         } else {
             giveReloadOption("Turn on internet or WiFi");
         }
+    }
+
+    public int getStatusBarHeight() {
+        int result = 0;
+        int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
+        if (resourceId > 0) {
+            result = getResources().getDimensionPixelSize(resourceId);
+        }
+        return result;
     }
 
     private void attachApiCallObserver() {
@@ -195,12 +205,10 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
                 if (weatherForecastResponse != null) {
                     forecastModelArrayList.clear();
                     ForecastModel forecastModel;
-                    DateTimeZone dateTimeZone = DateTimeZone.forTimeZone(TimeZone.getTimeZone(String.valueOf(weatherForecastResponse.getCity().getTimezone())));
                     for (int i = 0; i < weatherForecastResponse.getCnt(); i = i + 8) {
                         forecastModel = new ForecastModel();
                         forecastModel.setDate(DateUtility.getDateFromTimestamp(weatherForecastResponse.getList().get(i).getDt()));
                         Double minTemp = findAverageTemprature(weatherForecastResponse.getList(), i);
-//                        Double maxTemp = (weatherForecastResponse.getList().get(i).getMain().getTempMax()); // giving almost same in 3hrs duration , so not using
                         forecastModel.setTempRange(String.format(Locale.ENGLISH, "%.2f\u00B0", minTemp));
                         forecastModel.setDayName(getDayName(weatherForecastResponse.getList().get(i).getDt()));
                         forecastModel.setIconName(weatherForecastResponse.getList().get(i).getWeather().get(0).getIcon());
@@ -215,11 +223,11 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
         });
     }
 
-    public double findAverageTemprature(List<WeatherDataList> temps, int startIndex){
+    public double findAverageTemprature(List<WeatherDataList> temps, int startIndex) {
 
         double sum = 0;
-        for( int i = startIndex ; i < startIndex + 8 ; i++){
-            sum+=temps.get(i).getMain().getTemp();
+        for (int i = startIndex; i < startIndex + 8; i++) {
+            sum += temps.get(i).getMain().getTemp();
         }
         return sum / 8;
 
@@ -297,12 +305,11 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
 
     @OnClick(R.id.reload_button)
     public void onViewClicked() {
-        if (isNetworkAvailable()){
+        if (isNetworkAvailable()) {
             permissionRequest();
             Toast.makeText(this, "Refreshed", Toast.LENGTH_SHORT).show();
 
-        }
-        else giveReloadOption("Please Turn on Internet or Wifi");
+        } else giveReloadOption("Please Turn on Internet or Wifi");
     }
 
     private boolean isNetworkAvailable() {
@@ -316,7 +323,7 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
         int count = root.getChildCount();
         float offset = getResources().getDimensionPixelSize(R.dimen.offset_y);
         Interpolator interpolator;
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             interpolator = AnimationUtils.loadInterpolator(this, android.R.interpolator.linear_out_slow_in);
             // loop over the children setting an increasing translation y but the same animation
             // duration + interpolation
@@ -341,12 +348,11 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
 
     @Override
     public void onRefresh() {
-        if (isNetworkAvailable()){
+        if (isNetworkAvailable()) {
             permissionRequest();
             Toast.makeText(this, "Refreshed", Toast.LENGTH_SHORT).show();
 
-        }
-        else giveReloadOption("Please Turn on Internet or Wifi");
+        } else giveReloadOption("Please Turn on Internet or Wifi");
         swipeToRefresh.setRefreshing(false);
     }
 
