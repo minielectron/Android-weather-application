@@ -1,5 +1,4 @@
 package com.uniqolabel.weatherapp.activities;
-
 import android.Manifest;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
@@ -30,6 +29,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.view.WindowManager;
 import android.view.animation.AnimationUtils;
 import android.view.animation.Interpolator;
 import android.widget.Button;
@@ -59,6 +59,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Locale;
 import java.util.TimeZone;
+import java.util.concurrent.Executors;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -111,20 +112,17 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
     private int delay = 0;
     private DateTimeZone dateTimeZone;
 
-
-    enum Days {
-        SUNDAY,
-        MONDAY, TUESDAY, WEDNESDAY,
-        THURSDAY, FRIDAY, SATURDAY;
-    }
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        hideSystemUI(getWindow());
         ButterKnife.bind(this);
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+//            Window w = getWindow(); // in Activity's onCreate() for instance
+//            w.setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+//        }
         setSupportActionBar(toolbar);
+        root.setPadding(0,getStatusBarHeight(),0,0);
         weatherViewModel = ViewModelProviders.of(this).get(WeatherViewModel.class);
         forecastModelArrayList = new ArrayList<>();
         dateTimeZone = DateTimeZone.forTimeZone(Calendar.getInstance().getTimeZone());
@@ -153,36 +151,47 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
         });
     }
 
+    public int getStatusBarHeight() {
+        int result = 0;
+        int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
+        if (resourceId > 0) {
+            result = getResources().getDimensionPixelSize(resourceId);
+        }
+        return result;
+    }
+
     private void permissionRequest() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION}, LOCATIO_REQUEST_CODE);
-        } else {
-            getWeatherReport();
-        }
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION}, LOCATIO_REQUEST_CODE);
+            } else {
+                getWeatherReport();
+            }
+        }else getWeatherReport();
     }
 
-    @Override
-    public void onWindowFocusChanged(boolean hasFocus) {
-        super.onWindowFocusChanged(hasFocus);
-        if (hasFocus) {
-            hideSystemUI(getWindow());
-        } else showSystemUI();
-    }
-
-    private void showSystemUI() {
-        View decorView = getWindow().getDecorView();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
-        }
-    }
-
-    private void hideSystemUI(Window window) {
-        View decorView = window.getDecorView();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            decorView.setSystemUiVisibility(
-                    View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
-        }
-    }
+//    @Override
+//    public void onWindowFocusChanged(boolean hasFocus) {
+//        super.onWindowFocusChanged(hasFocus);
+//        if (hasFocus) {
+//            hideSystemUI(getWindow());
+//        } else showSystemUI();
+//    }
+//
+//    private void showSystemUI() {
+//        View decorView = getWindow().getDecorView();
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+//            decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
+//        }
+//    }
+//
+//    private void hideSystemUI(Window window) {
+//        View decorView = window.getDecorView();
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+//            decorView.setSystemUiVisibility(
+//                    View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
+//        }
+//    }
 
     private void getWeatherReport() {
         maskFrame.setVisibility(View.GONE);
@@ -201,6 +210,7 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
                         Glide.with(getApplicationContext()).load(IMAGE_LOADING_URL + weatherSuccessResponse.getWeather().get(0).getIcon() + ".png").into(descriptionIcon);
                         sunriseTv.setText(DateUtility.getTimeFromTimestamp(weatherSuccessResponse.getSys().getSunrise()));
                         sunsetTv.setText(DateUtility.getTimeFromTimestamp(weatherSuccessResponse.getSys().getSunset()));
+                        rootOne.removeView(forecastRecyclerView);
                         setTransitionYAnimationOnViewGroup(rootOne);
                         getWeatherForecastReport(String.valueOf(location.getLatitude()), String.valueOf(location.getLongitude()), CELSIUS, getResources().getString(R.string.appid));
                     } else {
@@ -234,6 +244,8 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
                         forecastModelArrayList.add(forecastModel);
                     }
                     adapter.notifyDataSetChanged();
+                    rootOne.addView(forecastRecyclerView);
+                    setTransitionYAnimationOnViewGroup(forecastRecyclerView);
                 } else {
                     Log.d(TAG, "onChanged: forecast response is null");
                     Toast.makeText(MainActivity.this, "Forecast Response is null", Toast.LENGTH_SHORT).show();
@@ -291,8 +303,8 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
 
     private void showRationaleDialogSecond() {
         AlertDialog dialog = new AlertDialog.Builder(this)
-                .setMessage("Location Access Permission is required for usage of this application.")
-                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                .setMessage("Allow Location Access to use the application")
+                .setPositiveButton("Allow", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) {
                         Intent intent = new Intent();
                         intent.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
@@ -329,30 +341,36 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
         return activeNetworkInfo != null && activeNetworkInfo.isConnected();
     }
 
-    public void setTransitionYAnimationOnViewGroup(ViewGroup root) {
-        int count = root.getChildCount();
-        float offset = getResources().getDimensionPixelSize(R.dimen.offset_y);
-        Interpolator interpolator;
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
-            interpolator = AnimationUtils.loadInterpolator(this, android.R.interpolator.linear_out_slow_in);
-            // loop over the children setting an increasing translation y but the same animation
-            // duration + interpolation
-            for (int i = 0; i < count; i++) {
-                View view = root.getChildAt(i);
-                view.setVisibility(View.VISIBLE);
-                view.setTranslationY(offset);
-                view.setAlpha(0.67f);
-                // then animate back to natural position
-                view.animate()
-                        .translationY(0f)
-                        .alpha(1f)
-                        .setInterpolator(interpolator)
-                        .setDuration(400L)
-                        .start();
-                // increase the offset distance for the next view
-                offset *= 1.5f;
+    public void setTransitionYAnimationOnViewGroup(final ViewGroup root) {
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                int count = root.getChildCount();
+                float offset = getResources().getDimensionPixelSize(R.dimen.offset_y);
+                Interpolator interpolator;
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+                    interpolator = AnimationUtils.loadInterpolator(getApplicationContext(), android.R.interpolator.linear_out_slow_in);
+                    // loop over the children setting an increasing translation y but the same animation
+                    // duration + interpolation
+                    for (int i = 0; i < count; i++) {
+                        View view = root.getChildAt(i);
+                        view.setVisibility(View.VISIBLE);
+                        view.setTranslationY(offset);
+                        view.setAlpha(0.67f);
+                        // then animate back to natural position
+                        view.animate()
+                                .translationY(0f)
+                                .alpha(1f)
+                                .setInterpolator(interpolator)
+                                .setDuration(600L)
+                                .start();
+                        // increase the offset distance for the next view
+                        offset *= 1.5f;
+                    }
+                }
             }
-        }
+        },100);
+
 
     }
 
