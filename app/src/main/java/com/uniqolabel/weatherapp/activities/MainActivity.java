@@ -66,7 +66,7 @@ import butterknife.OnClick;
 
 public class MainActivity extends AppCompatActivity implements SwipeRefreshLayout.OnRefreshListener {
     private static final String TAG = "MainActivity";
-    private static final int LOCATIO_REQUEST_CODE = 111;
+    private static final int LOCATION_REQUEST_CODE = 111;
     private static final String CELSIUS = "metric";
     public static final String IMAGE_LOADING_URL = "http://openweathermap.org/img/wn/";
     @BindView(R.id.toolbar_text)
@@ -112,17 +112,10 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
     private DateTimeZone dateTimeZone;
 
 
-    enum Days {
-        SUNDAY,
-        MONDAY, TUESDAY, WEDNESDAY,
-        THURSDAY, FRIDAY, SATURDAY;
-    }
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        hideSystemUI(getWindow());
         ButterKnife.bind(this);
         setSupportActionBar(toolbar);
         weatherViewModel = ViewModelProviders.of(this).get(WeatherViewModel.class);
@@ -155,34 +148,12 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
 
     private void permissionRequest() {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION}, LOCATIO_REQUEST_CODE);
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_REQUEST_CODE);
         } else {
             getWeatherReport();
         }
     }
 
-    @Override
-    public void onWindowFocusChanged(boolean hasFocus) {
-        super.onWindowFocusChanged(hasFocus);
-        if (hasFocus) {
-            hideSystemUI(getWindow());
-        } else showSystemUI();
-    }
-
-    private void showSystemUI() {
-        View decorView = getWindow().getDecorView();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
-        }
-    }
-
-    private void hideSystemUI(Window window) {
-        View decorView = window.getDecorView();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            decorView.setSystemUiVisibility(
-                    View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
-        }
-    }
 
     private void getWeatherReport() {
         maskFrame.setVisibility(View.GONE);
@@ -256,7 +227,7 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == LOCATIO_REQUEST_CODE) {
+        if (requestCode == LOCATION_REQUEST_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 getWeatherReport();
             } else if (grantResults[0] == PackageManager.PERMISSION_DENIED) {
