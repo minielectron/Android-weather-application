@@ -6,4 +6,5 @@
     <string name="weather_icon">weather icon</string>
     <string name="partly_sunny">Partly sunny</string>
     <string name="temperature">Temperature</string>
+    <string name="humidity">Humidity</string>
 </resources>
