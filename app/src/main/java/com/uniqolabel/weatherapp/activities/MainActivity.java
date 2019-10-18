@@ -45,6 +45,7 @@ import com.uniqolabel.weatherapp.ForecastAdapter;
 import com.uniqolabel.weatherapp.R;
 import com.uniqolabel.weatherapp.model.CurrentWeatherResponse;
 import com.uniqolabel.weatherapp.model.ForecastModel;
+import com.uniqolabel.weatherapp.model.WeatherDataList;
 import com.uniqolabel.weatherapp.model.WeatherForecastResponse;
 import com.uniqolabel.weatherapp.services.GPSTracker;
 import com.uniqolabel.weatherapp.utils.DateUtility;
@@ -57,6 +58,7 @@ import org.joda.time.format.DateTimeFormatter;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 
@@ -197,7 +199,7 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
                     for (int i = 0; i < weatherForecastResponse.getCnt(); i = i + 8) {
                         forecastModel = new ForecastModel();
                         forecastModel.setDate(DateUtility.getDateFromTimestamp(weatherForecastResponse.getList().get(i).getDt()));
-                        Double minTemp = (weatherForecastResponse.getList().get(i).getMain().getTempMin());
+                        Double minTemp = findAverageTemprature(weatherForecastResponse.getList(), i);
 //                        Double maxTemp = (weatherForecastResponse.getList().get(i).getMain().getTempMax()); // giving almost same in 3hrs duration , so not using
                         forecastModel.setTempRange(String.format(Locale.ENGLISH, "%.2f\u00B0", minTemp));
                         forecastModel.setDayName(getDayName(weatherForecastResponse.getList().get(i).getDt()));
@@ -211,6 +213,16 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
                 }
             }
         });
+    }
+
+    public double findAverageTemprature(List<WeatherDataList> temps, int startIndex){
+
+        double sum = 0;
+        for( int i = startIndex ; i < startIndex + 8 ; i++){
+            sum+=temps.get(i).getMain().getTemp();
+        }
+        return sum / 8;
+
     }
 
     public String getDayName(Long millisSinceEpochInUtc) {
