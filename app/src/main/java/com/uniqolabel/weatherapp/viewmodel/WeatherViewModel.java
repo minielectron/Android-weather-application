@@ -11,26 +11,25 @@ import com.uniqolabel.weatherapp.model.WeatherForecastResponse;
 import com.uniqolabel.weatherapp.repositories.WeatherRepository;
 
 public class WeatherViewModel extends AndroidViewModel {
-    private Application application;
+
     private MutableLiveData<WeatherForecastResponse> weatherSuccessResponseMutableLiveData;
-    private MutableLiveData<CurrentWeatherResponse> currentWeatherResponseMutableLiveData;
-    private WeatherRepository weatherRepository;
+    private final WeatherRepository weatherRepository;
     public static MutableLiveData<Boolean> loading;
-    public WeatherViewModel(@NonNull Application application) {
+
+    public WeatherViewModel(@NonNull final Application application) {
         super(application);
-        this.application = application;
         weatherSuccessResponseMutableLiveData = new MutableLiveData<>();
         weatherRepository = WeatherRepository.getInstance();
         loading = new MutableLiveData<>();
     }
 
-    public LiveData<WeatherForecastResponse> getWeatherInfoNetworkCall(String latitude, String longitude, String units, String appid){
+    public LiveData<WeatherForecastResponse> getWeatherInfoNetworkCall(final String latitude, final String longitude, String units, String appid){
         weatherSuccessResponseMutableLiveData = weatherRepository.getWeatherReportFromNetwork(latitude,longitude,units,appid);
         return weatherSuccessResponseMutableLiveData;
     }
 
-    public LiveData<CurrentWeatherResponse> getCurrentWeatherInfoNetworkCall(String latitude, String longitude, String units, String appid){
-        currentWeatherResponseMutableLiveData = weatherRepository.getCurrentWeatherReportFromNetwork(latitude,longitude,units,appid);
+    public LiveData<CurrentWeatherResponse> getCurrentWeatherInfoNetworkCall(final String latitude, final String longitude, String units, String appid){
+        MutableLiveData<CurrentWeatherResponse> currentWeatherResponseMutableLiveData = weatherRepository.getCurrentWeatherReportFromNetwork(latitude, longitude, units, appid);
         return currentWeatherResponseMutableLiveData;
     }
 

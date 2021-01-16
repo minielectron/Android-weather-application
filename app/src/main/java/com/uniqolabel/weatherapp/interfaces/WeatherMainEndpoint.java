@@ -8,7 +8,7 @@ import retrofit2.http.GET;
 import retrofit2.http.Query;
 
 public interface WeatherMainEndpoint {
-    public static final String WEATHER_URL= "http://api.openweathermap.org/";
+    String WEATHER_URL= "http://api.openweathermap.org/";
 
     @GET("data/2.5/forecast")
     Call<WeatherForecastResponse> getWeatherForecastInfo(@Query("lat") String latitude,
