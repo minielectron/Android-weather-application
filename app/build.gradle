@@ -3,7 +3,7 @@ apply plugin: 'com.android.application'
 android {
     compileSdkVersion 28
     defaultConfig {
-        applicationId "com.uniqolabel.weatherapp"
+        applicationId "com.lazyguide.weatherapp"
         minSdkVersion 16
         targetSdkVersion 28
         versionCode 1
@@ -15,6 +15,13 @@ android {
         debug {
             resValue "string", "appid" ,"2e3f40ef5f8d9c0e84f38d22e1112ac2"
             minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+
+        release {
+            resValue "string", "appid" ,"2e3f40ef5f8d9c0e84f38d22e1112ac2"
+            minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
